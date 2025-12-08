@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多角形ジェネレーター (Material Web)</title>
+
+    <!-- Tailwind CSS (for layout) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    screens: {
+                        'landscape': {'raw': '(orientation: landscape)'},
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts & Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+
+    <!-- Material Web Components v3 (Loading via Import Map for better performance) -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@material/web/": "https://esm.run/@material/web/"
+        }
+      }
+    </script>
+    <script type="module">
+      import '@material/web/all.js';
+      import { styles as typescaleStyles } from '@material/web/typography/md-typescale-styles.js';
+      document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
+    </script>
+
+    <style>
+        :root {
+            /* Material 3 Color Tokens */
+            --md-sys-color-primary: #6750A4;
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-primary-container: #EADDFF;
+            --md-sys-color-on-primary-container: #21005D;
+            --md-sys-color-surface: #FEF7FF;
+            --md-sys-color-surface-container: #F3EDF7;
+            --md-sys-color-on-surface: #1D1B20;
+            --md-sys-color-outline: #79747E;
+            
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+        }
+
+        body {
+            margin: 0;
+            height: 100vh; /* Viewport Height fixed */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent body scroll, handle inside panels */
+        }
+
+        /* Custom Styles for Canvas Container */
+        .canvas-container {
+            background-image: radial-gradient(var(--md-sys-color-primary-container) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        md-slider {
+            width: 100%;
+        }
+
+        .surface-card {
+            background-color: var(--md-sys-color-surface-container);
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        }
+
+        /* Responsive & Orientation Logic 
+           - Default (Portrait Mobile): Canvas Top, Controls Bottom (flex-col-reverse)
+           - Landscape Mobile / Tablet / Desktop: Controls Left, Canvas Right (flex-row)
+        */
+        .app-layout {
+            display: flex;
+            flex-direction: column-reverse; /* Controls at bottom for mobile portrait */
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .controls-panel {
+            background-color: var(--md-sys-color-surface);
+            z-index: 10;
+            overflow-y: auto;
+            flex-shrink: 0;
+            /* Mobile Portrait: Height adjustments */
+            height: 50%; 
+            border-top: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .canvas-area {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+            /* Ensure canvas doesn't get crushed to 0 height */
+            min-height: 200px; 
+        }
+
+        /* Desktop & Landscape Styles */
+        @media (min-width: 768px), (orientation: landscape) {
+            .app-layout {
+                flex-direction: row; /* Side by side */
+            }
+            
+            .controls-panel {
+                width: 340px;
+                min-width: 300px;
+                height: 100% !important; /* Full height */
+                border-top: none;
+                border-right: 1px solid rgba(0,0,0,0.1);
+                box-shadow: 4px 0 6px -1px rgba(0, 0, 0, 0.1);
+            }
+
+            .canvas-area {
+                height: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- App Bar -->
+    <div class="bg-[var(--md-sys-color-surface-container)] p-3 shadow-sm z-20 flex items-center gap-3 shrink-0">
+        <md-icon class="text-[var(--md-sys-color-primary)]">pentagon</md-icon>
+        <h1 class="text-lg font-medium text-[var(--md-sys-color-on-surface)]">多角形クリエイター</h1>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="app-layout">
+        
+        <!-- Controls Panel (Order in DOM is 1, but visually 2 in portrait due to col-reverse) -->
+        <div class="controls-panel p-4 md:p-6 flex flex-col gap-5">
+            
+            <div class="space-y-1 shrink-0">
+                <h2 class="text-base font-bold text-[var(--md-sys-color-primary)] flex items-center gap-2">
+                    <md-icon class="text-sm">tune</md-icon> 設定
+                </h2>
+            </div>
+
+            <!-- Sides Control -->
+            <div class="control-group">
+                <div class="flex justify-between items-center mb-0">
+                    <label class="text-sm font-medium">角の数: <span id="sides-val" class="text-[var(--md-sys-color-primary)] font-bold">5</span></label>
+                </div>
+                <md-slider id="sides-slider" min="3" max="50" value="5" ticks labeledStep></md-slider>
+            </div>
+
+            <!-- Radius Control -->
+            <div class="control-group">
+                <div class="flex justify-between items-center mb-0">
+                    <label class="text-sm font-medium">大きさ (半径)</label>
+                </div>
+                <md-slider id="radius-slider" min="10" max="300" value="150"></md-slider>
+            </div>
+
+            <!-- Rotation Control -->
+            <div class="control-group">
+                <div class="flex justify-between items-center mb-0">
+                    <label class="text-sm font-medium">回転</label>
+                </div>
+                <md-slider id="rotation-slider" min="0" max="360" value="270"></md-slider>
+            </div>
+
+            <!-- Line Width Control -->
+            <div class="control-group">
+                <div class="flex justify-between items-center mb-0">
+                    <label class="text-sm font-medium">線の太さ</label>
+                </div>
+                <md-slider id="width-slider" min="1" max="20" value="4"></md-slider>
+            </div>
+
+            <!-- Options -->
+            <div class="flex flex-wrap gap-x-4 gap-y-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <md-checkbox id="fill-check" checked touch-target="wrapper"></md-checkbox>
+                    <span class="text-sm">塗りつぶし</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <md-checkbox id="info-check" checked touch-target="wrapper"></md-checkbox>
+                    <span class="text-sm">情報表示</span>
+                </label>
+            </div>
+
+            <md-divider></md-divider>
+
+            <!-- Info Card -->
+            <div class="surface-card p-3">
+                <div class="flex justify-between items-center">
+                    <div class="text-sm opacity-80">
+                        <span class="block text-xs text-[var(--md-sys-color-outline)]">内角の和</span>
+                        <span id="interior-sum" class="font-mono font-bold text-base">540°</span>
+                    </div>
+                    <div class="h-8 w-[1px] bg-[var(--md-sys-color-outline)]/20"></div>
+                    <div class="text-sm opacity-80 text-right">
+                        <span class="block text-xs text-[var(--md-sys-color-outline)]">1つの内角</span>
+                        <span id="interior-angle" class="font-mono font-bold text-base">108°</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 mt-auto pt-4 pb-12 md:pb-0"> <!-- Extra padding for mobile bottom bar -->
+                 <md-filled-button id="random-btn" class="flex-1">
+                    <md-icon slot="icon">casino</md-icon>
+                    ランダム
+                 </md-filled-button>
+                 <md-outlined-button id="download-btn" class="flex-1">
+                    <md-icon slot="icon">download</md-icon>
+                    保存
+                 </md-outlined-button>
+            </div>
+
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="canvas-area bg-[var(--md-sys-color-surface-container)] canvas-container flex items-center justify-center">
+            <canvas id="polygonCanvas"></canvas>
+            
+            <!-- Toast Notification -->
+            <div id="toast" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-[var(--md-sys-color-on-surface)] text-[var(--md-sys-color-surface)] px-4 py-2 rounded-full opacity-0 transition-opacity duration-300 pointer-events-none z-50 shadow-lg text-sm whitespace-nowrap">
+                画像を保存しました
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // DOM Elements
+        const canvas = document.getElementById('polygonCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.querySelector('.canvas-area');
+
+        // Inputs
+        const sidesSlider = document.getElementById('sides-slider');
+        const radiusSlider = document.getElementById('radius-slider');
+        const rotationSlider = document.getElementById('rotation-slider');
+        const widthSlider = document.getElementById('width-slider');
+        const fillCheck = document.getElementById('fill-check');
+        const infoCheck = document.getElementById('info-check');
+        
+        // Labels
+        const sidesVal = document.getElementById('sides-val');
+        const interiorSum = document.getElementById('interior-sum');
+        const interiorAngle = document.getElementById('interior-angle');
+
+        // Buttons
+        const randomBtn = document.getElementById('random-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const toast = document.getElementById('toast');
+
+        // State
+        let state = {
+            sides: 5,
+            radius: 120, // Slightly smaller default for mobile safety
+            rotation: 270, 
+            lineWidth: 4,
+            isFilled: true,
+            showInfo: true,
+            width: 0,
+            height: 0,
+            colorHue: 260
+        };
+
+        function resizeCanvas() {
+            // Get container size
+            const rect = container.getBoundingClientRect();
+            // Handle HiDPI displays for sharper rendering
+            const dpr = window.devicePixelRatio || 1;
+            
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            
+            // CSS size for layout
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+
+            state.width = rect.width;
+            state.height = rect.height;
+            
+            // Scale context for HiDPI
+            ctx.scale(dpr, dpr);
+            
+            // Adjust max radius based on screen size to prevent clipping
+            const minDim = Math.min(rect.width, rect.height);
+            const safeMax = (minDim / 2) - 20;
+            radiusSlider.max = Math.max(100, safeMax); // Keep at least 100
+            
+            if(state.radius > radiusSlider.max) {
+                state.radius = Math.floor(radiusSlider.max);
+                radiusSlider.value = state.radius;
+            }
+
+            draw();
+        }
+
+        function updateMathInfo() {
+            const n = state.sides;
+            const sum = (n - 2) * 180;
+            const one = sum / n;
+
+            interiorSum.textContent = `${sum}°`;
+            interiorAngle.textContent = `${one.toFixed(1).replace(/\.0$/, '')}°`;
+            sidesVal.textContent = n;
+        }
+
+        function draw() {
+            const { width, height, sides, radius, rotation, lineWidth, isFilled, showInfo, colorHue } = state;
+            const cx = width / 2;
+            const cy = height / 2;
+
+            // Clear (using logical size, handled by scale but clearRect needs logical coords)
+            ctx.clearRect(0, 0, width, height);
+
+            const vertices = [];
+            const rotationRad = (rotation * Math.PI) / 180;
+
+            for (let i = 0; i < sides; i++) {
+                const angle = (i * 2 * Math.PI / sides) + rotationRad;
+                const x = cx + radius * Math.cos(angle);
+                const y = cy + radius * Math.sin(angle);
+                vertices.push({x, y});
+            }
+
+            // Draw Shape
+            ctx.beginPath();
+            ctx.moveTo(vertices[0].x, vertices[0].y);
+            for (let i = 1; i < sides; i++) {
+                ctx.lineTo(vertices[i].x, vertices[i].y);
+            }
+            ctx.closePath();
+
+            const primaryColor = `hsl(${colorHue}, 70%, 50%)`;
+            const fillColor = `hsla(${colorHue}, 70%, 90%, 0.6)`;
+            
+            ctx.lineWidth = lineWidth;
+            ctx.strokeStyle = primaryColor;
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+
+            if (isFilled) {
+                ctx.fillStyle = fillColor;
+                ctx.fill();
+            }
+
+            if (showInfo) {
+                // Center
+                ctx.beginPath();
+                ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+                ctx.fillStyle = primaryColor;
+                ctx.fill();
+
+                // Vertices
+                ctx.fillStyle = 'white';
+                ctx.strokeStyle = primaryColor;
+                ctx.lineWidth = 2;
+                vertices.forEach(v => {
+                    ctx.beginPath();
+                    ctx.arc(v.x, v.y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                });
+            }
+        }
+
+        // Event Listeners
+        sidesSlider.addEventListener('input', (e) => {
+            state.sides = parseInt(e.target.value);
+            updateMathInfo();
+            draw();
+        });
+
+        radiusSlider.addEventListener('input', (e) => {
+            state.radius = parseInt(e.target.value);
+            draw();
+        });
+
+        rotationSlider.addEventListener('input', (e) => {
+            state.rotation = parseInt(e.target.value);
+            draw();
+        });
+
+        widthSlider.addEventListener('input', (e) => {
+            state.lineWidth = parseInt(e.target.value);
+            draw();
+        });
+
+        fillCheck.addEventListener('change', (e) => {
+            state.isFilled = e.target.checked;
+            draw();
+        });
+
+        infoCheck.addEventListener('change', (e) => {
+            state.showInfo = e.target.checked;
+            draw();
+        });
+
+        randomBtn.addEventListener('click', () => {
+            const newSides = Math.floor(Math.random() * 10) + 3;
+            const newRotation = Math.floor(Math.random() * 360);
+            const newHue = Math.floor(Math.random() * 360);
+            
+            sidesSlider.value = newSides;
+            rotationSlider.value = newRotation;
+            
+            state.sides = newSides;
+            state.rotation = newRotation;
+            state.colorHue = newHue;
+            
+            document.documentElement.style.setProperty('--md-sys-color-primary', `hsl(${newHue}, 70%, 50%)`);
+            document.documentElement.style.setProperty('--md-sys-color-primary-container', `hsl(${newHue}, 70%, 90%)`);
+            
+            updateMathInfo();
+            draw();
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = `polygon_${state.sides}.png`;
+            // Canvas to DataURL works fine even with HiDPI scaling
+            link.href = canvas.toDataURL();
+            link.click();
+            
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2000);
+        });
+
+        // Resize observer for more robust resizing
+        const resizeObserver = new ResizeObserver(() => {
+            resizeCanvas();
+        });
+        resizeObserver.observe(container);
+        
+        // Initial setup
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            updateMathInfo();
+        });
+
+    </script>
+</body>
+</html>
