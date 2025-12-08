@@ -1,0 +1,47 @@
+name: Deploy static content to Pages - Minimized
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Single deploy job since we're just deploying
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (Fetch only latest commit)
+        uses: actions/checkout@v4
+        # 最新のコミットのみを取得して高速化
+        with:
+          fetch-depth: 1 
+          
+      # 静的コンテンツのルートデプロイでは、configure-pages@v5 は不要なので削除！
+      
+      - name: Upload artifact (Entire repo root)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # リポジトリ全体（静的ファイル）をアップロード
+          path: '.'
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
