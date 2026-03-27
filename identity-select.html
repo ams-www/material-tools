@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Identity Slider</title>
+    <!-- Material Design 3 (M3) Web Components -->
+    <script type="importmap">
+    {
+      "imports": {
+        "@material/web/": "https://esm.run/@material/web/"
+      }
+    }
+    </script>
+    <script type="module">
+        import '@material/web/all.js';
+        import {styles as typescaleStyles} from '@material/web/typography/md-typescale-styles.js';
+        document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --md-sys-color-primary: #d0bcff;
+            --md-sys-color-on-primary: #381e72;
+            --md-sys-color-surface: #1c1b1f;
+            --md-sys-color-on-surface: #e6e1e5;
+            --md-sys-color-outline: #938f99;
+        }
+
+        body {
+            background-color: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+            font-family: 'Noto Sans JP', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: #2b2930;
+            padding: 24px;
+            border-radius: 28px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 32px;
+            color: var(--md-sys-color-primary);
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin: 24px 0 8px 0;
+            border-left: 4px solid var(--md-sys-color-primary);
+            padding-left: 12px;
+            color: var(--md-sys-color-primary);
+        }
+
+        .item {
+            margin-bottom: 24px;
+        }
+
+        .label-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .title {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .side-label {
+            font-size: 12px;
+            width: 80px;
+            color: var(--md-sys-color-outline);
+        }
+
+        .side-label.left { text-align: right; }
+        .side-label.right { text-align: left; }
+
+        md-slider {
+            flex-grow: 1;
+            --md-slider-active-track-color: var(--md-sys-color-primary);
+            --md-slider-handle-color: var(--md-sys-color-primary);
+        }
+
+        .actions {
+            margin-top: 40px;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        #copy-message {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>自己分析・アイデンティティ</h1>
+
+    <!-- セクション 1: 身体・性自認 -->
+    <div class="section-title">性別・自己認識</div>
+    <div id="section1"></div>
+
+    <!-- セクション 2: 恋愛・対人 -->
+    <div class="section-title">恋愛・対人関係</div>
+    <div id="section2"></div>
+
+    <div class="actions">
+        <md-filled-button id="copy-btn">
+            結果をコピー
+            <svg slot="icon" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+        </md-filled-button>
+    </div>
+</div>
+
+<div id="copy-message">コピーしました！</div>
+
+<script>
+    const data1 = [
+        { title: "体の性", left: "♂", right: "♀" },
+        { title: "心の性", left: "男性", right: "女性" },
+        { title: "性自認の流動性", left: "不安定", right: "安定" },
+        { title: "認識されたい性", left: "男性", right: "女性" },
+        { title: "服装", left: "メンズ", right: "レディース" },
+        { title: "理想の服装", left: "メンズ", right: "レディース" },
+        { title: "髪の長さ", left: "短髪", right: "長髪" },
+        { title: "理想の髪の長さ", left: "短髪", right: "長髪" },
+        { title: "理想の体格", left: "筋肉質", right: "丸みを帯びた" },
+        { title: "口調", left: "男性的", right: "女性的" },
+        { title: "仕草", left: "男性的", right: "女性的" }
+    ];
+
+    const data2 = [
+        { title: "戸籍、名前等の変更を望むか", left: "望まない", right: "望む" },
+        { title: "治療、手術等を望むか", left: "望まない", right: "望む" },
+        { title: "恋愛感情", left: "無し", right: "有り" },
+        { title: "恋愛関係を望むか", left: "望まない", right: "望む" },
+        { title: "人として好きになる性", left: "男性", right: "女性" },
+        { title: "恋愛感情で好きになる性", left: "男性", right: "女性" },
+        { title: "スキンシップを受け入れられる性", left: "男性", right: "女性" },
+        { title: "性行為を受け入れられる性", left: "男性", right: "女性" },
+        { title: "理想の恋愛関係", left: "モノアモリー", right: "ポリアモリー" },
+        { title: "結婚願望", left: "無し", right: "有り" }
+    ];
+
+    function createItems(data, containerId) {
+        const container = document.getElementById(containerId);
+        data.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'item';
+            div.innerHTML = `
+                <div class="label-group">
+                    <span class="title">${item.title}</span>
+                </div>
+                <div class="slider-container">
+                    <span class="side-label left">${item.left}</span>
+                    <md-slider min="0" max="100" value="50" id="slider-${containerId}-${index}"></md-slider>
+                    <span class="side-label right">${item.right}</span>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    createItems(data1, 'section1');
+    createItems(data2, 'section2');
+
+    document.getElementById('copy-btn').addEventListener('click', () => {
+        let resultText = "【自己診断結果】\n";
+        
+        const process = (data, containerId) => {
+            data.forEach((item, index) => {
+                const val = document.getElementById(`slider-${containerId}-${index}`).value;
+                let marker = "ー".repeat(10).split("");
+                let pos = Math.floor(val / 10);
+                if(pos > 9) pos = 9;
+                marker[pos] = "●";
+                resultText += `・${item.title}: ${item.left} ${marker.join("")} ${item.right}\n`;
+            });
+        };
+
+        process(data1, 'section1');
+        process(data2, 'section2');
+
+        // クリップボードにコピー
+        const el = document.createElement('textarea');
+        el.value = resultText;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+
+        const msg = document.getElementById('copy-message');
+        msg.style.display = 'block';
+        setTimeout(() => msg.style.display = 'none', 2000);
+    });
+</script>
+
+</body>
+</html>
+
