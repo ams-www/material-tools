@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ChromeOS風 画面 (修正版)</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+      font-family: sans-serif;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .desktop { flex: 1; position: relative; }
+    
+    .launcher {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      width: 400px;
+      height: 480px;
+      background-color: rgba(240, 248, 255, 0.9);
+      border-radius: 16px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    
+    .search-box {
+      display: flex;
+      align-items: center;
+      background-color: white;
+      border-radius: 24px;
+      padding: 8px 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    /* 修正: inputに合わせたスタイル */
+    .search-box input {
+      border: none;
+      background: transparent;
+      outline: none;
+      flex: 1;
+      margin-left: 8px;
+      font-size: 14px;
+    }
+
+    .shelf {
+      height: 48px;
+      background-color: rgba(255, 255, 255, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px;
+      backdrop-filter: blur(10px);
+    }
+    
+    .shelf-center { display: flex; gap: 4px; }
+    
+    .shelf-right {
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      background-color: rgba(0,0,0,0.05);
+      border-radius: 16px;
+      font-size: 14px;
+      gap: 8px;
+    }
+  </style>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "@material/web/": "https://esm.run/@material/web/"
+      }
+    }
+  </script>
+  <script type="module">
+    import '@material/web/all.js';
+  </script>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+  <div class="desktop">
+    <div class="launcher">
+      <div class="search-box">
+        <span class="material-icons" style="color: #4285F4;">search</span>
+        <input type="text" id="launcher-search" name="launcher-search" placeholder="Search tabs, files, apps...">
+      </div>
+    </div>
+  </div>
+  
+  <footer class="shelf">
+    <div>
+      <md-icon-button>
+        <span class="material-icons">radio_button_checked</span>
+      </md-icon-button>
+    </div>
+
+    <div class="shelf-center">
+      <md-icon-button><span class="material-icons" style="color:#DB4437;">public</span></md-icon-button>
+      <md-icon-button><span class="material-icons" style="color:#DB4437;">mail</span></md-icon-button>
+      <md-icon-button><span class="material-icons" style="color:#4285F4;">folder</span></md-icon-button>
+      <md-icon-button><span class="material-icons" style="color:#0F9D58;">video_call</span></md-icon-button>
+      <md-icon-button><span class="material-icons" style="color:#DB4437;">play_arrow</span></md-icon-button>
+    </div>
+
+    <div class="shelf-right">
+      <md-icon-button>
+        <span class="material-icons">branding_watermark</span>
+      </md-icon-button>
+      <span>10月17日</span>
+      <span>20:59</span>
+    </div>
+  </footer>
+</body>
+</html>
